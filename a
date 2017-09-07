@@ -1,0 +1,104 @@
+#! /bin/bash
+
+#set -x
+set -o nounset
+declare -a nums
+declare -a count
+declare -a defaultCount
+core=88
+coreTmp=$core
+P=1
+Q=0
+Qj=-1
+j=0
+
+while true;do
+	in=0
+	tmp=$((coreTmp/2))
+	for((i=2;i<$tmp;i++));do
+		if [[ $((coreTmp%i)) -eq 0 ]];then
+			in=1
+			nums[j]=$i
+			[[ $i -gt $Q && $i -gt 9 ]] && Q=$i && Qj=$j
+			((j++))
+			coreTmp=$((coreTmp/i))
+echo "coreTmp:$coreTmp"
+			break
+		fi
+	done
+	if [[ $in -eq 0 ]];then
+		[[ $coreTmp -gt 9 && $coreTmp -gt $Q ]] && Q=$coreTmp && Qj=$j
+		nums[j]=$coreTmp
+		break
+	fi
+done
+numsAmount=${#nums[@]}
+echo "Qj:$Qj"
+if [[ $Qj -gt -1 ]];then
+	for ((i=0;i<numsAmount;i++));do
+		if [[ $Qj -ne $i ]];then
+			P=$((P*${nums[$i]}))
+		fi
+	done
+else
+	num1=$((numsAmount/2))
+	num2=$((numsAmount-num1))
+	compareCut=100
+	tmpP=1
+	tmpQ=1
+	step=2
+	add=1
+	change=0
+	isAdd=0
+	finish=0
+	[[ $num1 -gt $num2 ]] && max=$num1 || max=$num2
+	for ((i=0;i<max;i++));do
+		count[$i]=$i
+		defaultCount[$i]=$i
+	done
+	while true;do
+		for((i=0;i<max;i++));do
+			j=${count[$i]}
+			tmpP=$((nums[$j]*tmpP))
+		done
+		tmpQ=$((core/tmpP))
+		[[ $tmpQ -gt $tmpP ]] && sub=$((tmpQ-tmpP)) || sub=$((tmpP-tmpQ))
+		if [[ $sub -lt $compareCut ]];then
+			Q=$tmpQ
+			P=$tmpP
+			compareCut=$sub
+		fi
+		tmpP=1
+		k=$((max-1))
+		((count[$k]++))
+		if [[ ${count[$k]} -ge $numsAmount ]];then
+			count[$k]=$((defaultCount[$k]+add))
+			((isAdd++))
+			[[ ${count[$k]} -ge $numsAmount ]] && count[$k]=$((numsAmount-1))
+			for((i=1;i<step;i++));do
+				l=$((max-i-1))
+				if [[ $l -ge 0 ]];then
+					if [[ ${count[$l]} -le $((numsAmount-i-2)) ]];then
+						[[ ${count[$l]} -eq $((numsAmount-i)) ]] && ((isAdd++))
+						count[$l]=$((defaultCount[$l]+add))
+						((change++))
+					fi
+				else
+					finish=1
+				fi
+			done
+			[[ $isAdd -ge $((max-1)) ]] && ((add++))
+			[[ $change -eq 0 ]] && ((step++))
+			isAdd=0
+			change=0
+		fi
+		[[ $finish -eq 1 ]] && break
+	done
+fi
+if [[ $P -gt $Q ]];then
+	tmp=$P
+	P=$Q
+	Q=$tmp
+fi
+echo "P:$P"
+echo "Q:$Q"
